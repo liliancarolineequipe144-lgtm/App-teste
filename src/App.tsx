@@ -24,8 +24,19 @@ import {
 import ReactMarkdown from 'react-markdown';
 import { cn } from './lib/utils';
 
-// Initialize Gemini
-const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
+// Initialize Gemini (lazy initialization)
+let aiInstance: GoogleGenAI | null = null;
+
+function getAI() {
+  if (!aiInstance) {
+    const apiKey = process.env.GEMINI_API_KEY;
+    if (!apiKey) {
+      throw new Error("GEMINI_API_KEY não encontrada. Verifique as configurações.");
+    }
+    aiInstance = new GoogleGenAI({ apiKey });
+  }
+  return aiInstance;
+}
 
 interface GeneratedResult {
   moldInstructions: string;
@@ -66,6 +77,7 @@ export default function App() {
     setLoadingStep("Analisando sua referência e descrição...");
 
     try {
+      const ai = getAI();
       // Step 1: Generate Mold Instructions and Design Analysis
       const analysisPrompt = `
         Você é um especialista em design gráfico e criação de moldes (templates).
@@ -168,7 +180,10 @@ export default function App() {
           <div className="w-10 h-10 bg-black flex items-center justify-center rounded-sm">
             <Palette className="text-[#00FF00] w-6 h-6" />
           </div>
-          <h1 className="text-2xl font-black uppercase tracking-tighter">ArtStudio<span className="text-[#00FF00]">.</span></h1>
+          <div className="flex flex-col">
+            <h1 className="text-2xl font-black uppercase tracking-tighter leading-none">ArtStudio<span className="text-[#00FF00]">.</span></h1>
+            <span className="text-[10px] font-bold uppercase tracking-widest text-[#00FF00] bg-black px-1 self-start mt-1">Livre & Aberto</span>
+          </div>
         </div>
         <div className="hidden md:flex gap-8 text-xs font-bold uppercase tracking-widest opacity-60">
           <span>Criar</span>
