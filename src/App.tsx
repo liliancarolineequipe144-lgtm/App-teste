@@ -60,7 +60,36 @@ export default function App() {
     if (file) {
       const reader = new FileReader();
       reader.onloadend = () => {
-        setter(reader.result as string);
+        const img = new Image();
+        img.onload = () => {
+          const canvas = document.createElement('canvas');
+          let width = img.width;
+          let height = img.height;
+          
+          // Max dimension 800px for stability
+          const MAX_SIZE = 800;
+          if (width > height) {
+            if (width > MAX_SIZE) {
+              height *= MAX_SIZE / width;
+              width = MAX_SIZE;
+            }
+          } else {
+            if (height > MAX_SIZE) {
+              width *= MAX_SIZE / height;
+              height = MAX_SIZE;
+            }
+          }
+          
+          canvas.width = width;
+          canvas.height = height;
+          const ctx = canvas.getContext('2d');
+          ctx?.drawImage(img, 0, 0, width, height);
+          
+          // Compress to JPEG 0.7 quality
+          const compressed = canvas.toDataURL('image/jpeg', 0.7);
+          setter(compressed);
+        };
+        img.src = reader.result as string;
       };
       reader.readAsDataURL(file);
     }
@@ -78,6 +107,13 @@ export default function App() {
 
     try {
       const ai = getAI();
+      
+      // Helper to safely get base64 data
+      const getBase64 = (dataUrl: string) => {
+        const parts = dataUrl.split(',');
+        return parts.length > 1 ? parts[1] : dataUrl;
+      };
+
       // Step 1: Generate Mold Instructions and Design Analysis
       const analysisPrompt = `
         Você é um especialista em design gráfico e criação de moldes (templates).
@@ -98,7 +134,7 @@ export default function App() {
         parts.push({
           inlineData: {
             mimeType: "image/jpeg",
-            data: referenceImage.split(',')[1]
+            data: getBase64(referenceImage)
           }
         });
       }
@@ -106,7 +142,7 @@ export default function App() {
         parts.push({
           inlineData: {
             mimeType: "image/jpeg",
-            data: logoImage.split(',')[1]
+            data: getBase64(logoImage)
           }
         });
       }
@@ -135,7 +171,7 @@ export default function App() {
         imageParts.push({
           inlineData: {
             mimeType: "image/jpeg",
-            data: referenceImage.split(',')[1]
+            data: getBase64(referenceImage)
           }
         });
       }
@@ -152,10 +188,12 @@ export default function App() {
       });
 
       let artImageUrl = null;
-      for (const part of imageResponse.candidates[0].content.parts) {
-        if (part.inlineData) {
-          artImageUrl = `data:image/png;base64,${part.inlineData.data}`;
-          break;
+      if (imageResponse.candidates?.[0]?.content?.parts) {
+        for (const part of imageResponse.candidates[0].content.parts) {
+          if (part.inlineData) {
+            artImageUrl = `data:image/png;base64,${part.inlineData.data}`;
+            break;
+          }
         }
       }
 
@@ -163,9 +201,10 @@ export default function App() {
         moldInstructions,
         artImageUrl
       });
-    } catch (err) {
+    } catch (err: any) {
       console.error(err);
-      setError("Ocorreu um erro ao gerar sua arte. Por favor, tente novamente.");
+      const errorMessage = err?.message || "Erro desconhecido";
+      setError(`Erro ao gerar arte: ${errorMessage}. Verifique se as imagens não são muito grandes.`);
     } finally {
       setIsGenerating(false);
       setLoadingStep("");
