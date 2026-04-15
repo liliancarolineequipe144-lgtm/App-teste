@@ -1,0 +1,16 @@
+@import "tailwindcss";
+
+@theme {
+  --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
+}
+
+/* Custom Prose-like styles for the markdown results */
+.prose h1 { @apply text-3xl font-black mb-4; }
+.prose h2 { @apply text-xl font-bold mt-6 mb-3 border-b border-black pb-1; }
+.prose h3 { @apply text-lg font-bold mt-4 mb-2; }
+.prose p { @apply mb-4 leading-relaxed; }
+.prose ul { @apply list-disc pl-5 mb-4; }
+.prose ol { @apply list-decimal pl-5 mb-4; }
+.prose li { @apply mb-1; }
+.prose strong { @apply font-bold; }
+.prose code { @apply bg-zinc-100 px-1 rounded font-mono text-sm; }
